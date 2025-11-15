@@ -334,6 +334,19 @@
       background: #FFCE85;
       cursor: pointer;
     }
+/* ====== 商品小結（總件數＋總金額） ====== */
+.summary-box {
+  font-size: 13px;
+  background: #FFF4E0;
+  border-radius: 10px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  color: #704214;
+}
+
+.summary-box b {
+  font-weight: 700;
+}
 
     /* ========= 手機 RWD ========= */
     @media (max-width: 768px) {
@@ -386,6 +399,18 @@
         font-size: 13px;
       }
     }
+    .summary-box {
+  font-size: 13px;
+  background: #FFF4E0;
+  border-radius: 10px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  color: #704214;
+}
+.summary-box b {
+  font-weight: 700;
+}
+
   </style>
 </head>
 
@@ -617,9 +642,24 @@ function searchOrder(){
   const hasNote   = headerKeys.includes(COL_NOTE);
   const hasDate   = headerKeys.includes(COL_DATE);
 
+  // 👉 先算整體總數量＋總金額
+  let totalQtyAll = 0;
+  let totalAmountAll = 0;
+  matches.forEach(r => {
+    const q = hasQty ? parseQuantityNumber(r[COL_QTY]) : 1;
+    totalQtyAll += q;
+    if (hasPrice) {
+      const p = parsePriceNumber(r[COL_PRICE]);
+      if (p !== null) {
+        totalAmountAll += p * q;
+      }
+    }
+  });
+
   if(!hasItem && !hasSpec){
     // 沒有商品欄位就直接簡單列出原始欄位
     html += `<div class="section-title"><span class="section-title-icon">📦</span> 商品列表（簡易顯示）</div>`;
+    // 這裡你也可以加 summary-box，如果需要的話
     matches.forEach((r, idx)=>{
       const stText = hasStatus ? (r[COL_STATUS] || "") : "";
       const stKey  = getStatusStyleKey(stText);
@@ -651,6 +691,16 @@ function searchOrder(){
   }
 
   html += `<div class="section-title"><span class="section-title-icon">📦</span> 商品列表</div>`;
+
+  // ✅ 小結顯示在商品列表標題下面
+  html += `<div class="summary-box">
+    本次訂單共 <b>${totalQtyAll}</b> 件商品${
+      (hasPrice && totalAmountAll)
+        ? `，合計金額約 <b>¥ ${totalAmountAll.toLocaleString("ja-JP")}</b>`
+        : ""
+    }
+  </div>`;
+
 
   // 依 商品名稱 + 款式 分組
   const group={};
@@ -732,6 +782,22 @@ function searchOrder(){
   out.innerHTML=html;
 }
 
+    // ✅ 狀態說明小 legend
+  html += `
+    <div class="status-legend">
+      <div>📌 狀態說明（給您參考）</div>
+      <ul>
+        <li><span class="legend-dot legend-dot-pending"></span>「未」字相關：尚未處理或等待中</li>
+        <li><span class="legend-dot legend-dot-processing"></span>「處理 / 下單 / 運送中」：訂單已在處理流程中</li>
+        <li><span class="legend-dot legend-dot-arrived"></span>「到貨 / 抵台」：商品已抵達日本或台灣，準備後續出貨</li>
+        <li><span class="legend-dot legend-dot-done"></span>「完成 / 結單 / 已寄出」：此商品已處理完畢</li>
+      </ul>
+    </div>
+  `;
+
+  out.innerHTML=html;
+}
+  
 // 點 header 展開/收合
 function toggleCardBody(headerEl){
   const body = headerEl.nextElementSibling;
