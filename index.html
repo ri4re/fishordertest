@@ -167,6 +167,47 @@
     .link-btn:hover {
       background: #FFF3E0;
     }
+        /* 手機版優化 */
+    @media (max-width: 768px) {
+      body {
+        margin: 0;
+        padding: 12px;
+      }
+      .wrap {
+        max-width: 100%;
+        margin: 0 auto;
+        padding: 14px 12px;
+        border-radius: 12px;
+        box-shadow: none; /* 手機上不用那麼重的陰影，比較像 App */
+      }
+      h1 {
+        font-size: 18px;
+        margin-bottom: 4px;
+      }
+      .subtitle {
+        font-size: 11px;
+      }
+      .search-row {
+        flex-direction: column;
+        gap: 6px;
+      }
+      .search-row select,
+      .search-row input {
+        width: 100%;
+      }
+      input[type="text"],
+      select,
+      button {
+        font-size: 16px;     /* 手機字大一點好按 */
+        padding: 10px 12px;  /* 可點範圍變大 */
+      }
+      .card {
+        padding: 10px;
+      }
+      .customer-box {
+        padding: 8px;
+      }
+    }
   </style>
 </head>
 
