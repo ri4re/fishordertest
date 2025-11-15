@@ -529,17 +529,18 @@ let rows = [];
 let headerKeys = [];
 
 /* 固定欄位名稱（照你的 CSV） */
-const COL_EMAIL   = "信箱";
-const COL_MEMBER  = "會員編號";
-const COL_LINE    = "LINE名稱";
-const COL_ITEM    = "商品名稱";
-const COL_SPEC    = "款式";
-const COL_QTY     = "數量";
-const COL_STATUS  = "狀態";
-const COL_PRICE   = "金額";
-const COL_URL     = "商品網址";
-const COL_NOTE    = "備註";
-const COL_DATE    = "更新日期";
+const COL_EMAIL    = "信箱";
+const COL_MEMBER   = "會員編號";
+const COL_LINE     = "LINE名稱";
+const COL_ITEM     = "商品名稱";
+const COL_SPEC     = "款式";
+const COL_QTY      = "數量";
+const COL_STATUS   = "狀態";
+const COL_PRICE    = "金額";
+const COL_URL      = "商品網址";
+const COL_NOTE     = "備註";
+const COL_DATE     = "更新日期";
+const COL_SHIPDATE = "出貨日期";   // 🔹 新增：出貨日期欄位
 
 // 讀取 fishorder.csv
 window.addEventListener("DOMContentLoaded", () => {
@@ -640,9 +641,11 @@ function searchOrder(){
   }
 
   // 檢查欄位是否存在
-  const hasEmail  = headerKeys.includes(COL_EMAIL);
-  const hasMember = headerKeys.includes(COL_MEMBER);
-  const hasLine   = headerKeys.includes(COL_LINE);
+  const hasEmail    = headerKeys.includes(COL_EMAIL);
+  const hasMember   = headerKeys.includes(COL_MEMBER);
+  const hasLine     = headerKeys.includes(COL_LINE);
+  const hasShipDate = headerKeys.includes(COL_SHIPDATE);
+  const hasDate     = headerKeys.includes(COL_DATE);
 
   let targetColName = null;
   if (type === "email") {
@@ -694,7 +697,6 @@ function searchOrder(){
   const hasPrice  = headerKeys.includes(COL_PRICE);
   const hasUrl    = headerKeys.includes(COL_URL);
   const hasNote   = headerKeys.includes(COL_NOTE);
-  const hasDate   = headerKeys.includes(COL_DATE);
 
   // 先計算總件數＋總金額
   let totalQtyAll = 0;
@@ -828,7 +830,12 @@ function searchOrder(){
     if(noteCombined) {
       html += `<div class="card-body-row">📝 備註：${noteCombined}</div>`;
     }
-    if(hasDate && last[COL_DATE]) {
+    // 🚚 出貨日期優先顯示
+    if (hasShipDate && last[COL_SHIPDATE]) {
+      html += `<div class="card-body-row">🚚 出貨日期：${last[COL_SHIPDATE]}</div>`;
+    }
+    // 保留更新日期當備用資訊
+    if (hasDate && last[COL_DATE]) {
       html += `<div class="card-body-row">📅 更新日期：${last[COL_DATE]}</div>`;
     }
     html += `</div>`; // end body
@@ -839,14 +846,14 @@ function searchOrder(){
   html += `
     <div class="info-box">
       🔔 如對訂單進度有任何疑問，請將此畫面截圖，並透過 LINE 官方帳號與我們聯繫。<br>
-      我們會依照畫面中的「訂單狀態」與「更新日期」為您確認最新情況。🙏
+      我們會依照畫面中的「訂單狀態」與「更新日期 / 出貨日期」為您確認最新情況。🙏
     </div>
   `;
 
   // ======== 歷史訂單（依出貨日期統整） ========
-  if (hasStatus && hasDate) {
+  if (hasStatus && (hasShipDate || hasDate)) {
     const doneRows = matches.filter(r => getStatusStyleKey(r[COL_STATUS]) === "done");
-    html += buildHistoryByDateSection(doneRows, hasItem, hasSpec, hasQty, hasPrice, hasDate);
+    html += buildHistoryByDateSection(doneRows, hasItem, hasSpec, hasQty, hasPrice, hasShipDate, hasDate);
   }
 
   // 狀態 legend
@@ -870,10 +877,10 @@ function statusLegendHtml(){
 }
 
 /**
- * 依「出貨日期（更新日期）」統整已結單紀錄
- * 每個日期一行，顯示：日期 / 商品＋數量 / 當日小計
+ * 依「出貨日期」統整已結單紀錄
+ * 有出貨日期優先用，沒有才退回用更新日期
  */
-function buildHistoryByDateSection(doneRows, hasItem, hasSpec, hasQty, hasPrice, hasDate) {
+function buildHistoryByDateSection(doneRows, hasItem, hasSpec, hasQty, hasPrice, hasShipDate, hasDate) {
   if (!doneRows || !doneRows.length) {
     return `
       <div class="history-box">
@@ -883,10 +890,15 @@ function buildHistoryByDateSection(doneRows, hasItem, hasSpec, hasQty, hasPrice,
     `;
   }
 
-  // 依日期分組（用更新日期當作出貨日）
+  // 依日期分組：優先使用出貨日期，其次更新日期
   const dateGroup = {};
   doneRows.forEach(r => {
-    const d = hasDate ? (r[COL_DATE] || "未填日期") : "未填日期";
+    let d = "未填日期";
+    if (hasShipDate && r[COL_SHIPDATE]) {
+      d = r[COL_SHIPDATE];
+    } else if (hasDate && r[COL_DATE]) {
+      d = r[COL_DATE];
+    }
     if (!dateGroup[d]) dateGroup[d] = [];
     dateGroup[d].push(r);
   });
@@ -921,8 +933,7 @@ function buildHistoryByDateSection(doneRows, hasItem, hasSpec, hasQty, hasPrice,
       if (hasPrice) {
         const p = parsePriceNumber(r[COL_PRICE]);
         if (p !== null) {
-          // 預設同一商品＋款式價格相同，只記一個
-          itemGroup[key].price = p;
+          itemGroup[key].price = p; // 同商品＋款式價格視為相同
         }
       }
     });
