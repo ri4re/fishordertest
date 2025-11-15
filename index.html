@@ -27,7 +27,7 @@
     }
 
     h1 {
-      font-size: 24px;              /* 標題字放大一點 */
+      font-size: 24px;
       text-align: center;
       margin: 0 0 8px;
       letter-spacing: 1px;
@@ -56,7 +56,7 @@
       margin: 8px 0 4px;
     }
 
-    /* 搜尋區塊：select + 搜尋框 + 按鈕黏在一起 */
+    /* 搜尋區塊 */
     .search-block {
       margin-bottom: 6px;
     }
@@ -132,7 +132,7 @@
     }
 
     .section-title-icon {
-      font-size: 14px;  /* ICON 稍微壓小一點 */
+      font-size: 14px;
     }
 
     .customer-box {
@@ -279,11 +279,11 @@
       margin-top: 8px;
       font-size: 13px;
       line-height: 1.6;
-      display: none;             /* 預設收合 */
+      display: none;
     }
 
     .card-body.open {
-      display: block;           /* 展開 */
+      display: block;
     }
 
     .card-body-row {
@@ -304,7 +304,38 @@
       background: #FFF3E0;
     }
 
-    /* ========= 手機 RWD：更像 App ========= */
+    /* 手動匯入區塊 */
+    .import-area {
+      margin-top: 14px;
+      font-size: 12px;
+      background: #FFF8E8;
+      border-radius: 12px;
+      border: 1px dashed #FFC078;
+      padding: 10px;
+    }
+    .import-area textarea {
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 10px;
+      border: 1px solid #FFD8A8;
+      padding: 8px;
+      font-size: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      min-height: 80px;
+      resize: vertical;
+      background: #FFFCF5;
+    }
+    .import-area button {
+      margin-top: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      border-radius: 999px;
+      border: 1px solid #FFB96A;
+      background: #FFCE85;
+      cursor: pointer;
+    }
+
+    /* ========= 手機 RWD ========= */
     @media (max-width: 768px) {
       body {
         padding: 0;
@@ -376,14 +407,21 @@
     </div>
 
     <div class="search-inline">
-      <input id="searchValue" type="text" placeholder="請輸入會員編號 / 信箱 / LINE 名稱">
-      <button onclick="searchOrder()">搜尋</button>
+      <input id="searchValue" type="text" placeholder="請輸入會員編號">
+      <button type="button" onclick="searchOrder()">搜尋</button>
     </div>
 
     <div class="tip">
       ✳ 會員編號、信箱會以「完全相同」比對。<br>
       ✳ LINE 名稱會以「包含關鍵字」比對（例：輸入「魚魚」會找到「香魚大阪代購🐟」）。<br>
     </div>
+  </div>
+
+  <div class="import-area">
+    <b>② 若無法自動讀取檔案，可改用手動貼上 CSV / TSV</b><br>
+    例如從 Google Sheet / Notion 匯出後，將內容（含標題列）全部複製貼上。<br>
+    <textarea id="manualCsv" placeholder="在這裡貼上 CSV 或 TSV 文字"></textarea>
+    <button type="button" onclick="importManualCsv()">匯入貼上的資料</button>
   </div>
 
   <div class="result" id="result"></div>
@@ -393,10 +431,46 @@
 let rows = [];
 let headerKeys = [];
 
-// 讀取同資料夾裡的 fishorder.csv
+/* 固定欄位名稱（照你的 CSV） */
+const COL_EMAIL   = "信箱";
+const COL_MEMBER  = "會員編號";
+const COL_LINE    = "LINE名稱";
+const COL_ITEM    = "商品名稱";
+const COL_SPEC    = "款式";
+const COL_QTY     = "數量";
+const COL_STATUS  = "狀態";
+const COL_PRICE   = "金額";
+const COL_URL     = "商品網址";
+const COL_NOTE    = "備註";
+const COL_DATE    = "更新日期";
+
+// 讀取 fishorder.csv（若失敗，可以用手動貼上）
 window.addEventListener("DOMContentLoaded", () => {
   const statusEl = document.getElementById("loadStatus");
+  const searchTypeEl = document.getElementById("searchType");
+  const searchInputEl = document.getElementById("searchValue");
 
+  // 切換搜尋方式時，更新 placeholder
+  searchTypeEl.addEventListener("change", () => {
+    const v = searchTypeEl.value;
+    if (v === "member") {
+      searchInputEl.placeholder = "請輸入會員編號";
+    } else if (v === "email") {
+      searchInputEl.placeholder = "請輸入信箱";
+    } else {
+      searchInputEl.placeholder = "請輸入 LINE 名稱關鍵字";
+    }
+  });
+
+  // Enter 直接搜尋
+  searchInputEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      searchOrder();
+    }
+  });
+
+  // 嘗試讀取檔案（需要用 http 開啟才不會被擋）
   fetch("fishorder.csv")
     .then(resp => {
       if (!resp.ok) throw new Error("HTTP " + resp.status);
@@ -408,15 +482,37 @@ window.addEventListener("DOMContentLoaded", () => {
     })
     .catch(err => {
       console.error(err);
-      statusEl.textContent = "⚠ 無法讀取訂單資料";
+      statusEl.textContent = "⚠ 無法讀取訂單資料（若為本機 file:// 開啟，請改用小型伺服器或手動貼上 CSV）";
     });
 });
 
-// 解析 CSV
+// 手動貼上 CSV 匯入
+function importManualCsv(){
+  const txt = document.getElementById("manualCsv").value.trim();
+  const statusEl = document.getElementById("loadStatus");
+  if(!txt){
+    alert("請先在上方框框貼上 CSV / TSV 內容");
+    return;
+  }
+  try{
+    parseRawData(txt);
+    statusEl.textContent = `已從貼上的資料載入，共 ${rows.length} 筆。`;
+    alert("匯入成功，可以開始搜尋囉！");
+  }catch(e){
+    console.error(e);
+    alert("解析貼上的資料時發生錯誤，請確認格式是否為一行一筆、以逗號或 TAB 分隔。");
+  }
+}
+
+// 解析 CSV/TSV
 function parseRawData(raw) {
   const cleaned = raw.trim();
   const lines = cleaned.split(/\r?\n/).filter(l => l.trim());
-  if (lines.length < 2) return;
+  if (lines.length < 2) {
+    rows = [];
+    headerKeys = [];
+    return;
+  }
 
   const first = lines[0];
   const sep = first.includes("\t") ? "\t" : ",";
@@ -455,72 +551,136 @@ function searchOrder(){
   const out=document.getElementById("result");
   out.innerHTML="";
 
-  if(!val){alert("請輸入查詢內容");return;}
-  if(!rows.length){out.innerHTML="尚未載入資料";return;}
+  if(!val){
+    alert("請輸入查詢內容");
+    return;
+  }
+  if(!rows.length){
+    out.innerHTML='<div class="empty">尚未載入資料，請確認 fishorder.csv 或使用「手動貼上 CSV」功能。</div>';
+    return;
+  }
 
-  const emailKey  = headerKeys.find(k=>/信箱|mail/i.test(k));
-  const memberKey = headerKeys.find(k=>/會員|member/i.test(k));
-  const lineKey   = headerKeys.find(k=>/line/i.test(k));
+  // 檢查欄位是否存在
+  const hasEmail  = headerKeys.includes(COL_EMAIL);
+  const hasMember = headerKeys.includes(COL_MEMBER);
+  const hasLine   = headerKeys.includes(COL_LINE);
 
-  let targetKey = type==="email"
-      ? emailKey
-      : type==="member"
-      ? memberKey
-      : lineKey;
+  let targetColName = null;
+  if (type === "email") {
+    if (!hasEmail) {
+      out.innerHTML = `<div class="empty">資料中沒有「${COL_EMAIL}」欄位，請確認 CSV 標題。</div>`;
+      return;
+    }
+    targetColName = COL_EMAIL;
+  } else if (type === "member") {
+    if (!hasMember) {
+      out.innerHTML = `<div class="empty">資料中沒有「${COL_MEMBER}」欄位，請確認 CSV 標題。</div>`;
+      return;
+    }
+    targetColName = COL_MEMBER;
+  } else {
+    if (!hasLine) {
+      out.innerHTML = `<div class="empty">資料中沒有「${COL_LINE}」欄位，請確認 CSV 標題。</div>`;
+      return;
+    }
+    targetColName = COL_LINE;
+  }
 
   const matches = rows.filter(r=>{
-    const v=(r[targetKey]||"").toLowerCase();
+    const v=(r[targetColName]||"").toLowerCase();
     return type==="line" ? v.includes(val) : v===val;
   });
 
-  if(!matches.length){out.innerHTML="查無資料";return;}
-
-  const nameKey   = headerKeys.find(k=>/客人名稱|姓名|名字|顯示名稱|客|名/i.test(k));
-  const itemKey   = headerKeys.find(k=>/商品名稱|商品|品項/i.test(k));
-  const specKey   = headerKeys.find(k=>/規格|款式|版本|ver/i.test(k));
-  const statusKey = headerKeys.find(k=>/狀態|進度/i.test(k));
-  const priceKey  = headerKeys.find(k=>/金額|價格|價/i.test(k));
-  const qtyKey    = headerKeys.find(k=>/數量|qty|件數|個數|數目/i.test(k));
-  const noteKey   = headerKeys.find(k=>/備註|備考|コメント/i.test(k));
-  const urlKey    = headerKeys.find(k=>/商品網址|商品URL|商品連結|連結|link|product ?url|url/i.test(k));
-  const dateKey   = headerKeys.find(k=>/更新日期|更新時間|最後更新|update|date/i.test(k));
+  if(!matches.length){
+    out.innerHTML='<div class="empty">查無符合的訂單資料，請確認輸入內容是否正確。</div>';
+    return;
+  }
 
   let html = "";
-  const f = matches[0];
+  const firstRow = matches[0];
 
-  // 客人資訊
+  // ========= 客人資訊 =========
   html += `<div class="section-title"><span class="section-title-icon">👤</span> 客人資訊</div>`;
   html += `<div class="customer-box"><ul>`;
-  if(nameKey)   html+=`<li>名稱：${f[nameKey]||""}</li>`;
-  if(memberKey) html+=`<li>會員ID：${f[memberKey]||""}</li>`;
-  if(lineKey)   html+=`<li>LINE：${f[lineKey]||""}</li>`;
-  if(emailKey)  html+=`<li>信箱：${f[emailKey]||""}</li>`;
+  if(hasMember) html+=`<li>會員編號：${firstRow[COL_MEMBER]||""}</li>`;
+  if(hasLine)   html+=`<li>LINE 名稱：${firstRow[COL_LINE]||""}</li>`;
+  if(hasEmail)  html+=`<li>信箱：${firstRow[COL_EMAIL]||""}</li>`;
   html += `</ul></div>`;
 
-  // 依「商品 + 規格」分組
-  const group={};
-  matches.forEach(r=>{
-    const k=(r[itemKey]||"")+"||"+(r[specKey]||"");
-    if(!group[k]) group[k]=[];
-    group[k].push(r);
-  });
+  // ========= 商品列表 =========
+  const hasItem   = headerKeys.includes(COL_ITEM);
+  const hasSpec   = headerKeys.includes(COL_SPEC);
+  const hasQty    = headerKeys.includes(COL_QTY);
+  const hasStatus = headerKeys.includes(COL_STATUS);
+  const hasPrice  = headerKeys.includes(COL_PRICE);
+  const hasUrl    = headerKeys.includes(COL_URL);
+  const hasNote   = headerKeys.includes(COL_NOTE);
+  const hasDate   = headerKeys.includes(COL_DATE);
+
+  if(!hasItem && !hasSpec){
+    // 沒有商品欄位就直接簡單列出原始欄位
+    html += `<div class="section-title"><span class="section-title-icon">📦</span> 商品列表（簡易顯示）</div>`;
+    matches.forEach((r, idx)=>{
+      const stText = hasStatus ? (r[COL_STATUS] || "") : "";
+      const stKey  = getStatusStyleKey(stText);
+      html += `<div class="card card--${stKey}">`;
+      html += `<div class="card-header" onclick="toggleCardBody(this)">
+                 <div class="card-main">
+                   <div class="card-title">
+                     第 ${idx+1} 筆訂單
+                     ${hasStatus ? `<span class="badge badge--${stKey}">${stText}</span>` : ""}
+                   </div>
+                 </div>
+                 <div class="card-toggle-icon">⌄</div>
+               </div>`;
+      html += `<div class="card-body${idx===0?" open":""}">`;
+      headerKeys.forEach(k=>{
+        html += `<div class="card-body-row">${k}：${r[k]||""}</div>`;
+      });
+      html += `</div></div>`;
+    });
+
+    html += `
+      <div class="info-box">
+        🔔 如對訂單進度有任何疑問，請將此畫面截圖，並透過 LINE 官方帳號與我們聯繫。<br>
+        目前因為 CSV 標題中沒有「商品名稱 / 款式」欄位，暫以原始欄位顯示。
+      </div>
+    `;
+    out.innerHTML = html;
+    return;
+  }
 
   html += `<div class="section-title"><span class="section-title-icon">📦</span> 商品列表</div>`;
 
-  Object.keys(group).forEach((k, idx)=>{
-    const list=group[k];
+  // 依 商品名稱 + 款式 分組
+  const group={};
+  matches.forEach(r=>{
+    const itemVal = hasItem ? (r[COL_ITEM]||"") : "";
+    const specVal = hasSpec ? (r[COL_SPEC]||"") : "";
+    const key=itemVal+"||"+specVal;
+    if(!group[key]) group[key]=[];
+    group[key].push(r);
+  });
+
+  Object.keys(group).forEach((key, idx)=>{
+    const list=group[key];
     const last=list[list.length-1];
 
-    const itemVal=list[0][itemKey]||"";
-    const specVal=list[0][specKey]||"";
+    const itemVal = hasItem ? (list[0][COL_ITEM]||"") : "";
+    const specVal = hasSpec ? (list[0][COL_SPEC]||"") : "";
 
-    const qtyTotal=list.map(r=>parseQuantityNumber(r[qtyKey])).reduce((a,b)=>a+b,0);
-    const priceBase=parsePriceNumber(list[0][priceKey]);
+    const qtyTotal=list.map(r=>{
+      return hasQty ? parseQuantityNumber(r[COL_QTY]) : 1;
+    }).reduce((a,b)=>a+b,0);
+
+    const priceBase = hasPrice ? parsePriceNumber(list[0][COL_PRICE]) : null;
     const total=priceBase?priceBase*qtyTotal:"";
 
-    const noteCombined=[...new Set(list.map(r=>r[noteKey]).filter(Boolean))].join(" / ");
+    const noteCombined = hasNote
+      ? [...new Set(list.map(r=>r[COL_NOTE]).filter(Boolean))].join(" / ")
+      : "";
 
-    const statusText = last[statusKey] || "";
+    const statusText = hasStatus ? (last[COL_STATUS] || "") : "";
     const statusKeyStyle = getStatusStyleKey(statusText);
 
     html += `<div class="card card--${statusKeyStyle}">`;
@@ -530,28 +690,32 @@ function searchOrder(){
       <div class="card-header" onclick="toggleCardBody(this)">
         <div class="card-main">
           <div class="card-title">
-            ${itemVal}${specVal?`（${specVal}）`:""}
-            <span class="badge badge--${statusKeyStyle}">${statusText}</span>
+            ${itemVal || "未填商品"}${specVal?`（${specVal}）`:""}
+            ${hasStatus ? `<span class="badge badge--${statusKeyStyle}">${statusText}</span>` : ""}
           </div>
           <div class="card-subline">
             <span>數量：${qtyTotal}</span>
-            ${priceKey ? `<span>金額：${list[0][priceKey]}${total?`（合計：${total}）`:""}</span>` : ""}
+            ${
+              hasPrice
+                ? `<span>金額：${list[0][COL_PRICE] || ""}${total?`（合計：${total}）`:""}</span>`
+                : ""
+            }
           </div>
         </div>
         <div class="card-toggle-icon">⌄</div>
       </div>
     `;
 
-    // body（詳細資訊，可收合）
+    // body（詳細資訊）
     html += `<div class="card-body${idx===0?" open":""}">`;
-    if(urlKey && last[urlKey]) {
-      html += `<div class="card-body-row">🔗 商品連結：<a class="link-btn" href="${last[urlKey]}" target="_blank" rel="noopener noreferrer">查看商品頁</a></div>`;
+    if(hasUrl && last[COL_URL]) {
+      html += `<div class="card-body-row">🔗 商品連結：<a class="link-btn" href="${last[COL_URL]}" target="_blank" rel="noopener noreferrer">查看商品頁</a></div>`;
     }
     if(noteCombined) {
       html += `<div class="card-body-row">📝 備註：${noteCombined}</div>`;
     }
-    if(dateKey && last[dateKey]) {
-      html += `<div class="card-body-row">📅 更新日期：${last[dateKey]}</div>`;
+    if(hasDate && last[COL_DATE]) {
+      html += `<div class="card-body-row">📅 更新日期：${last[COL_DATE]}</div>`;
     }
     html += `</div>`; // end body
 
