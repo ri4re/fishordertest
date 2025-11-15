@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>訂單查詢 - 香魚會員專用</title>
-  <!-- 手機版必要：讓寬度跟裝置一樣 -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <style>
@@ -32,6 +31,7 @@
       margin: 0 0 8px;
       letter-spacing: 1px;
     }
+
     h1 span {
       font-size: 26px;
     }
@@ -56,7 +56,7 @@
       margin: 8px 0 4px;
     }
 
-    /* 搜尋區塊 */
+    /* ========= 搜尋區塊 ========= */
     .search-block {
       margin-bottom: 6px;
     }
@@ -169,8 +169,134 @@
       margin-top: 12px;
     }
 
-    /* ===== 卡片（商品） ===== */
+    /* ====== 商品小結（總件數＋總金額） ====== */
+    .summary-box {
+      font-size: 13px;
+      background: #FFF4E0;
+      border-radius: 10px;
+      padding: 6px 10px;
+      margin-bottom: 8px;
+      color: #704214;
+    }
 
+    .summary-box b {
+      font-weight: 700;
+    }
+
+    /* ====== 狀態 legend ====== */
+    .status-legend {
+      margin-top: 10px;
+      font-size: 12px;
+      background: #FFFDF5;
+      border-radius: 10px;
+      padding: 8px 10px;
+      border: 1px dashed #FFE0B2;
+      color: #555;
+    }
+
+    .status-legend ul {
+      margin: 6px 0 0;
+      padding-left: 18px;
+    }
+
+    .status-legend li {
+      margin-bottom: 3px;
+      list-style: none;
+    }
+
+    .legend-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    .legend-dot-pending {
+      background: #FFD8A8;
+    }
+
+    .legend-dot-processing {
+      background: #FFC9C9;
+    }
+
+    .legend-dot-arrived {
+      background: #91A7FF;
+    }
+
+    .legend-dot-done {
+      background: #8CE99A;
+    }
+
+    /* ====== 歷史訂單（已結單統整） ====== */
+    .history-box {
+      margin-top: 16px;
+      font-size: 13px;
+      background: #F5F0FF;
+      border-radius: 12px;
+      padding: 10px 12px;
+      border: 1px dashed #B197FC;
+      color: #4B3F72;
+    }
+
+    .history-title {
+      font-weight: 700;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .history-summary {
+      margin-bottom: 6px;
+    }
+
+    .history-summary b {
+      font-weight: 700;
+    }
+
+    .history-empty {
+      font-size: 12px;
+      color: #777;
+    }
+
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 4px;
+      font-size: 12px;
+    }
+
+    .history-table th,
+    .history-table td {
+      border-bottom: 1px solid #E5DBFF;
+      padding: 4px 2px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    .history-table th:nth-child(1),
+    .history-table td:nth-child(1) {
+      width: 55%;
+    }
+
+    .history-table th:nth-child(2),
+    .history-table td:nth-child(2) {
+      width: 10%;
+    }
+
+    .history-table th:nth-child(3),
+    .history-table td:nth-child(3) {
+      width: 20%;
+    }
+
+    .history-table th:nth-child(4),
+    .history-table td:nth-child(4) {
+      width: 15%;
+    }
+
+    /* ===== 卡片（商品） ===== */
     .card {
       border-radius: 14px;
       padding: 10px 12px;
@@ -182,23 +308,26 @@
       overflow: hidden;
     }
 
-    /* 狀態配色：依狀態自動變卡片顏色 */
     .card--pending {
       background: #FFF7E6;
       border-color: #FFD8A8;
     }
+
     .card--processing {
       background: #FFF3D9;
       border-color: #FFC078;
     }
+
     .card--arrived {
       background: #E8F4FF;
       border-color: #74C0FC;
     }
+
     .card--done {
       background: #E7FBEF;
       border-color: #69DB7C;
     }
+
     .card--default {
       background: #F8F9FA;
       border-color: #CED4DA;
@@ -258,18 +387,22 @@
       background: #FFE8CC;
       color: #D9480F;
     }
+
     .badge--processing {
       background: #FFE3E3;
       color: #C92A2A;
     }
+
     .badge--arrived {
       background: #DCEFFF;
       color: #1C7ED6;
     }
+
     .badge--done {
       background: #D3F9D8;
       color: #2B8A3E;
     }
+
     .badge--default {
       background: #E9ECEF;
       color: #495057;
@@ -300,53 +433,10 @@
       background: #FFF;
       margin-top: 3px;
     }
+
     .link-btn:hover {
       background: #FFF3E0;
     }
-
-    /* 手動匯入區塊 */
-    .import-area {
-      margin-top: 14px;
-      font-size: 12px;
-      background: #FFF8E8;
-      border-radius: 12px;
-      border: 1px dashed #FFC078;
-      padding: 10px;
-    }
-    .import-area textarea {
-      width: 100%;
-      box-sizing: border-box;
-      border-radius: 10px;
-      border: 1px solid #FFD8A8;
-      padding: 8px;
-      font-size: 12px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      min-height: 80px;
-      resize: vertical;
-      background: #FFFCF5;
-    }
-    .import-area button {
-      margin-top: 6px;
-      padding: 6px 12px;
-      font-size: 12px;
-      border-radius: 999px;
-      border: 1px solid #FFB96A;
-      background: #FFCE85;
-      cursor: pointer;
-    }
-/* ====== 商品小結（總件數＋總金額） ====== */
-.summary-box {
-  font-size: 13px;
-  background: #FFF4E0;
-  border-radius: 10px;
-  padding: 6px 10px;
-  margin-bottom: 8px;
-  color: #704214;
-}
-
-.summary-box b {
-  font-weight: 700;
-}
 
     /* ========= 手機 RWD ========= */
     @media (max-width: 768px) {
@@ -384,6 +474,7 @@
         font-size: 16px;
         padding: 12px 12px;
       }
+
       .search-inline button {
         font-size: 16px;
         padding: 12px 16px;
@@ -392,25 +483,15 @@
       .card {
         font-size: 14px;
       }
+
       .card-title {
         font-size: 15px;
       }
+
       .info-box {
         font-size: 13px;
       }
     }
-    .summary-box {
-  font-size: 13px;
-  background: #FFF4E0;
-  border-radius: 10px;
-  padding: 6px 10px;
-  margin-bottom: 8px;
-  color: #704214;
-}
-.summary-box b {
-  font-weight: 700;
-}
-
   </style>
 </head>
 
@@ -442,13 +523,6 @@
     </div>
   </div>
 
-  <div class="import-area">
-    <b>② 若無法自動讀取檔案，可改用手動貼上 CSV / TSV</b><br>
-    例如從 Google Sheet / Notion 匯出後，將內容（含標題列）全部複製貼上。<br>
-    <textarea id="manualCsv" placeholder="在這裡貼上 CSV 或 TSV 文字"></textarea>
-    <button type="button" onclick="importManualCsv()">匯入貼上的資料</button>
-  </div>
-
   <div class="result" id="result"></div>
 </div>
 
@@ -469,7 +543,7 @@ const COL_URL     = "商品網址";
 const COL_NOTE    = "備註";
 const COL_DATE    = "更新日期";
 
-// 讀取 fishorder.csv（若失敗，可以用手動貼上）
+// 讀取 fishorder.csv
 window.addEventListener("DOMContentLoaded", () => {
   const statusEl = document.getElementById("loadStatus");
   const searchTypeEl = document.getElementById("searchType");
@@ -495,7 +569,6 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 嘗試讀取檔案（需要用 http 開啟才不會被擋）
   fetch("fishorder.csv")
     .then(resp => {
       if (!resp.ok) throw new Error("HTTP " + resp.status);
@@ -507,27 +580,9 @@ window.addEventListener("DOMContentLoaded", () => {
     })
     .catch(err => {
       console.error(err);
-      statusEl.textContent = "⚠ 無法讀取訂單資料（若為本機 file:// 開啟，請改用小型伺服器或手動貼上 CSV）";
+      statusEl.textContent = "⚠ 無法讀取訂單資料，請確認 fishorder.csv 是否與本頁在同一資料夾，並透過 http 方式開啟。";
     });
 });
-
-// 手動貼上 CSV 匯入
-function importManualCsv(){
-  const txt = document.getElementById("manualCsv").value.trim();
-  const statusEl = document.getElementById("loadStatus");
-  if(!txt){
-    alert("請先在上方框框貼上 CSV / TSV 內容");
-    return;
-  }
-  try{
-    parseRawData(txt);
-    statusEl.textContent = `已從貼上的資料載入，共 ${rows.length} 筆。`;
-    alert("匯入成功，可以開始搜尋囉！");
-  }catch(e){
-    console.error(e);
-    alert("解析貼上的資料時發生錯誤，請確認格式是否為一行一筆、以逗號或 TAB 分隔。");
-  }
-}
 
 // 解析 CSV/TSV
 function parseRawData(raw) {
@@ -555,6 +610,7 @@ function parsePriceNumber(t){
   const n = parseFloat((t||"").replace(/[^\d.]/g,""));
   return isNaN(n)?null:n;
 }
+
 function parseQuantityNumber(t){
   const n = parseFloat((t||"1").replace(/[^\d.]/g,""));
   return isNaN(n)?1:n;
@@ -581,7 +637,7 @@ function searchOrder(){
     return;
   }
   if(!rows.length){
-    out.innerHTML='<div class="empty">尚未載入資料，請確認 fishorder.csv 或使用「手動貼上 CSV」功能。</div>';
+    out.innerHTML='<div class="empty">尚未載入資料，請確認 fishorder.csv 是否存在。</div>';
     return;
   }
 
@@ -632,7 +688,7 @@ function searchOrder(){
   if(hasEmail)  html+=`<li>信箱：${firstRow[COL_EMAIL]||""}</li>`;
   html += `</ul></div>`;
 
-  // ========= 商品列表 =========
+  // ========= 商品列表 & 小結 =========
   const hasItem   = headerKeys.includes(COL_ITEM);
   const hasSpec   = headerKeys.includes(COL_SPEC);
   const hasQty    = headerKeys.includes(COL_QTY);
@@ -642,7 +698,7 @@ function searchOrder(){
   const hasNote   = headerKeys.includes(COL_NOTE);
   const hasDate   = headerKeys.includes(COL_DATE);
 
-  // 👉 先算整體總數量＋總金額
+  // 先計算總件數＋總金額
   let totalQtyAll = 0;
   let totalAmountAll = 0;
   matches.forEach(r => {
@@ -659,7 +715,14 @@ function searchOrder(){
   if(!hasItem && !hasSpec){
     // 沒有商品欄位就直接簡單列出原始欄位
     html += `<div class="section-title"><span class="section-title-icon">📦</span> 商品列表（簡易顯示）</div>`;
-    // 這裡你也可以加 summary-box，如果需要的話
+    html += `<div class="summary-box">
+      本次訂單共 <b>${totalQtyAll}</b> 件商品${
+        (hasPrice && totalAmountAll)
+          ? `，合計金額約 <b>¥ ${totalAmountAll.toLocaleString("ja-JP")}</b>`
+          : ""
+      }
+    </div>`;
+
     matches.forEach((r, idx)=>{
       const stText = hasStatus ? (r[COL_STATUS] || "") : "";
       const stKey  = getStatusStyleKey(stText);
@@ -686,13 +749,17 @@ function searchOrder(){
         目前因為 CSV 標題中沒有「商品名稱 / 款式」欄位，暫以原始欄位顯示。
       </div>
     `;
+
+    // 狀態 legend
+    html += statusLegendHtml();
+
     out.innerHTML = html;
     return;
   }
 
   html += `<div class="section-title"><span class="section-title-icon">📦</span> 商品列表</div>`;
 
-  // ✅ 小結顯示在商品列表標題下面
+  // 小結顯示在商品列表標題下面
   html += `<div class="summary-box">
     本次訂單共 <b>${totalQtyAll}</b> 件商品${
       (hasPrice && totalAmountAll)
@@ -700,7 +767,6 @@ function searchOrder(){
         : ""
     }
   </div>`;
-
 
   // 依 商品名稱 + 款式 分組
   const group={};
@@ -779,11 +845,20 @@ function searchOrder(){
     </div>
   `;
 
+  // ======== 歷史訂單（已結單統整） ========
+  if (hasStatus && (hasItem || hasSpec)) {
+    const doneRows = matches.filter(r => getStatusStyleKey(r[COL_STATUS]) === "done");
+    html += buildHistorySection(doneRows, hasItem, hasSpec, hasQty, hasPrice, hasDate);
+  }
+
+  // 狀態 legend
+  html += statusLegendHtml();
+
   out.innerHTML=html;
 }
 
-    // ✅ 狀態說明小 legend
-  html += `
+function statusLegendHtml(){
+  return `
     <div class="status-legend">
       <div>📌 狀態說明（給您參考）</div>
       <ul>
@@ -794,10 +869,103 @@ function searchOrder(){
       </ul>
     </div>
   `;
-
-  out.innerHTML=html;
 }
-  
+
+// 建立「歷史訂單（已結單統整）」區塊
+function buildHistorySection(doneRows, hasItem, hasSpec, hasQty, hasPrice, hasDate){
+  if (!doneRows || !doneRows.length) {
+    return `
+      <div class="history-box">
+        <div class="history-title">📘 歷史訂單（已結單）</div>
+        <div class="history-empty">目前尚無已結單的商品，完成出貨後會顯示在這裡。</div>
+      </div>
+    `;
+  }
+
+  // 依 商品名稱＋款式 分組
+  const group = {};
+  doneRows.forEach(r => {
+    const itemVal = hasItem ? (r[COL_ITEM]||"") : "";
+    const specVal = hasSpec ? (r[COL_SPEC]||"") : "";
+    const key = itemVal + "||" + specVal;
+    if (!group[key]) group[key] = [];
+    group[key].push(r);
+  });
+
+  let totalDoneQty = 0;
+  let totalDoneAmount = 0;
+  let latestDate = "";
+
+  let rowsHtml = "";
+
+  Object.keys(group).forEach(key => {
+    const list = group[key];
+    const last = list[list.length - 1];
+
+    const itemVal = hasItem ? (list[0][COL_ITEM]||"") : "";
+    const specVal = hasSpec ? (list[0][COL_SPEC]||"") : "";
+
+    const qtyTotal = list.map(r => {
+      return hasQty ? parseQuantityNumber(r[COL_QTY]) : 1;
+    }).reduce((a,b)=>a+b,0);
+
+    totalDoneQty += qtyTotal;
+
+    let amount = 0;
+    let priceBase = null;
+    if (hasPrice) {
+      priceBase = parsePriceNumber(list[0][COL_PRICE]);
+      if (priceBase !== null) {
+        amount = priceBase * qtyTotal;
+        totalDoneAmount += amount;
+      }
+    }
+
+    let rowDate = "";
+    if (hasDate) {
+      rowDate = last[COL_DATE] || "";
+      if (rowDate) {
+        latestDate = rowDate; // 簡單地以最後一筆的日期當「最近更新」
+      }
+    }
+
+    rowsHtml += `
+      <tr>
+        <td>${itemVal || "未填商品"}${specVal ? `（${specVal}）` : ""}</td>
+        <td>${qtyTotal}</td>
+        <td>${(hasPrice && amount) ? `¥ ${amount.toLocaleString("ja-JP")}` : ""}</td>
+        <td>${rowDate}</td>
+      </tr>
+    `;
+  });
+
+  return `
+    <div class="history-box">
+      <div class="history-title">📘 歷史訂單（已結單統整）</div>
+      <div class="history-summary">
+        已結單商品共 <b>${totalDoneQty}</b> 件${
+          (totalDoneAmount && !isNaN(totalDoneAmount))
+            ? `，累計金額約 <b>¥ ${totalDoneAmount.toLocaleString("ja-JP")}</b>`
+            : ""
+        }${latestDate ? `（最近結單更新：${latestDate}）` : ""}
+      </div>
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>商品 / 款式</th>
+            <th>件數</th>
+            <th>小計</th>
+            <th>更新日期</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
 // 點 header 展開/收合
 function toggleCardBody(headerEl){
   const body = headerEl.nextElementSibling;
