@@ -175,12 +175,27 @@
       background: #FFF4E0;
       border-radius: 10px;
       padding: 6px 10px;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       color: #704214;
     }
 
     .summary-box b {
       font-weight: 700;
+    }
+
+    /* ====== 篩選區（顯示已完成勾勾） ====== */
+    .filter-bar {
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+      color: #555;
+    }
+
+    .filter-bar input[type="checkbox"] {
+      margin-right: 4px;
+      accent-color: #69DB7C;
     }
 
     /* ====== 狀態 legend ====== */
@@ -540,7 +555,7 @@ const COL_PRICE    = "金額";
 const COL_URL      = "商品網址";
 const COL_NOTE     = "備註";
 const COL_DATE     = "更新日期";
-const COL_SHIPDATE = "出貨日期";   // 🔹 新增：出貨日期欄位
+const COL_SHIPDATE = "出貨日期";   // 出貨日期欄位
 
 // 讀取 fishorder.csv
 window.addEventListener("DOMContentLoaded", () => {
@@ -617,11 +632,36 @@ function parseQuantityNumber(t){
 
 // 狀態→樣式 key
 function getStatusStyleKey(t){
-  const s=(t||"").toLowerCase();
-  if(s.includes("未")) return "pending";
-  if(s.includes("處理")||s.includes("進行")||s.includes("下單")) return "processing";
-  if(s.includes("到")||s.includes("貨")||s.includes("抵台")) return "arrived";
-  if(s.includes("完成")||s.includes("寄出")||s.includes("結單")) return "done";
+  const s = (t || "").toLowerCase();
+
+  // 先判斷「未」「待」
+  if (s.includes("未") || s.includes("待")) {
+    return "pending";
+  }
+  // 處理中
+  if (
+    s.includes("處理") || s.includes("進行") ||
+    s.includes("處理中") || s.includes("下單") ||
+    s.includes("準備") || s.includes("準備中")
+  ) {
+    return "processing";
+  }
+  // 已到貨
+  if (
+    s.includes("到貨") || s.includes("已到") ||
+    s.includes("抵台") || s.includes("到着") || s.includes("到著")
+  ) {
+    return "arrived";
+  }
+  // 已完成 / 已出貨
+  if (
+    s.includes("完成")  || s.includes("結單")  ||
+    s.includes("寄出")  || s.includes("已寄") ||
+    s.includes("完了")  || s.includes("已出貨") ||
+    s.includes("出貨")  || s.includes("出荷")
+  ) {
+    return "done";
+  }
   return "default";
 }
 
@@ -640,7 +680,6 @@ function searchOrder(){
     return;
   }
 
-  // 檢查欄位是否存在
   const hasEmail    = headerKeys.includes(COL_EMAIL);
   const hasMember   = headerKeys.includes(COL_MEMBER);
   const hasLine     = headerKeys.includes(COL_LINE);
@@ -698,35 +737,56 @@ function searchOrder(){
   const hasUrl    = headerKeys.includes(COL_URL);
   const hasNote   = headerKeys.includes(COL_NOTE);
 
-  // 先計算總件數＋總金額
-  let totalQtyAll = 0;
-  let totalAmountAll = 0;
-  matches.forEach(r => {
-    const q = hasQty ? parseQuantityNumber(r[COL_QTY]) : 1;
-    totalQtyAll += q;
-    if (hasPrice) {
-      const p = parsePriceNumber(r[COL_PRICE]);
-      if (p !== null) {
-        totalAmountAll += p * q;
+  // 只計算「未完成」的總件數＋總金額
+  let activeQty = 0;
+  let activeAmount = 0;
+  if (hasStatus) {
+    matches.forEach(r => {
+      const stKey = getStatusStyleKey(r[COL_STATUS]);
+      if (stKey !== "done") {
+        const q = hasQty ? parseQuantityNumber(r[COL_QTY]) : 1;
+        activeQty += q;
+        if (hasPrice) {
+          const p = parsePriceNumber(r[COL_PRICE]);
+          if (p !== null) {
+            activeAmount += p * q;
+          }
+        }
       }
-    }
-  });
+    });
+  } else {
+    // 沒有狀態欄位就全部算進來
+    matches.forEach(r => {
+      const q = hasQty ? parseQuantityNumber(r[COL_QTY]) : 1;
+      activeQty += q;
+      if (hasPrice) {
+        const p = parsePriceNumber(r[COL_PRICE]);
+        if (p !== null) {
+          activeAmount += p * q;
+        }
+      }
+    });
+  }
 
   if(!hasItem && !hasSpec){
-    // 沒有商品欄位就直接簡單列出原始欄位
+    // 沒有商品欄位就直接簡易顯示
     html += `<div class="section-title"><span class="section-title-icon">📦</span> 商品列表（簡易顯示）</div>`;
-    html += `<div class="summary-box">
-      本次訂單共 <b>${totalQtyAll}</b> 件商品${
-        (hasPrice && totalAmountAll)
-          ? `，合計金額約 <b>¥ ${totalAmountAll.toLocaleString("ja-JP")}</b>`
-          : ""
-      }
-    </div>`;
+    if (activeQty > 0) {
+      html += `<div class="summary-box">
+        目前未完成訂單共 <b>${activeQty}</b> 件商品${
+          (hasPrice && activeAmount)
+            ? `，合計金額約 <b>¥ ${activeAmount.toLocaleString("ja-JP")}</b>`
+            : ""
+        }
+      </div>`;
+    } else {
+      html += `<div class="summary-box">目前沒有未完成的訂單，以下為已完成紀錄。</div>`;
+    }
 
     matches.forEach((r, idx)=>{
       const stText = hasStatus ? (r[COL_STATUS] || "") : "";
-      const stKey  = getStatusStyleKey(stText);
-      html += `<div class="card card--${stKey}">`;
+      const stKey  = hasStatus ? getStatusStyleKey(stText) : "default";
+      html += `<div class="card card--${stKey}" data-status="${stKey}">`;
       html += `<div class="card-header" onclick="toggleCardBody(this)">
                  <div class="card-main">
                    <div class="card-title">
@@ -750,23 +810,36 @@ function searchOrder(){
       </div>
     `;
 
-    // 狀態 legend
     html += statusLegendHtml();
-
     out.innerHTML = html;
+    setupDoneFilter();
     return;
   }
 
   html += `<div class="section-title"><span class="section-title-icon">📦</span> 商品列表</div>`;
 
-  // 小結顯示在商品列表標題下面
-  html += `<div class="summary-box">
-    本次訂單共 <b>${totalQtyAll}</b> 件商品${
-      (hasPrice && totalAmountAll)
-        ? `，合計金額約 <b>¥ ${totalAmountAll.toLocaleString("ja-JP")}</b>`
-        : ""
-    }
-  </div>`;
+  // 小結
+  if (activeQty > 0) {
+    html += `<div class="summary-box">
+      目前未完成訂單共 <b>${activeQty}</b> 件商品${
+        (hasPrice && activeAmount)
+          ? `，合計金額約 <b>¥ ${activeAmount.toLocaleString("ja-JP")}</b>`
+          : ""
+      }
+    </div>`;
+  } else {
+    html += `<div class="summary-box">目前沒有未完成的訂單，以下為已完成紀錄。</div>`;
+  }
+
+  // 篩選列：顯示已完成
+  html += `
+    <div class="filter-bar">
+      <label>
+        <input type="checkbox" id="showDoneToggle">
+        顯示已完成商品（綠色小卡）
+      </label>
+    </div>
+  `;
 
   // 依 商品名稱 + 款式 分組
   const group={};
@@ -797,9 +870,9 @@ function searchOrder(){
       : "";
 
     const statusText = hasStatus ? (last[COL_STATUS] || "") : "";
-    const statusKeyStyle = getStatusStyleKey(statusText);
+    const statusKeyStyle = hasStatus ? getStatusStyleKey(statusText) : "default";
 
-    html += `<div class="card card--${statusKeyStyle}">`;
+    html += `<div class="card card--${statusKeyStyle}" data-status="${statusKeyStyle}">`;
 
     // header（點擊展開/收合）
     html += `
@@ -830,11 +903,9 @@ function searchOrder(){
     if(noteCombined) {
       html += `<div class="card-body-row">📝 備註：${noteCombined}</div>`;
     }
-    // 🚚 出貨日期優先顯示
     if (hasShipDate && last[COL_SHIPDATE]) {
       html += `<div class="card-body-row">🚚 出貨日期：${last[COL_SHIPDATE]}</div>`;
     }
-    // 保留更新日期當備用資訊
     if (hasDate && last[COL_DATE]) {
       html += `<div class="card-body-row">📅 更新日期：${last[COL_DATE]}</div>`;
     }
@@ -856,10 +927,10 @@ function searchOrder(){
     html += buildHistoryByDateSection(doneRows, hasItem, hasSpec, hasQty, hasPrice, hasShipDate, hasDate);
   }
 
-  // 狀態 legend
   html += statusLegendHtml();
 
   out.innerHTML=html;
+  setupDoneFilter();
 }
 
 function statusLegendHtml(){
@@ -867,10 +938,10 @@ function statusLegendHtml(){
     <div class="status-legend">
       <div>📌 狀態說明（給您參考）</div>
       <ul>
-        <li><span class="legend-dot legend-dot-pending"></span>「未」字相關：尚未處理或等待中</li>
-        <li><span class="legend-dot legend-dot-processing"></span>「處理 / 下單 / 運送中」：訂單已在處理流程中</li>
-        <li><span class="legend-dot legend-dot-arrived"></span>「到貨 / 抵台」：商品已抵達日本或台灣，準備後續出貨</li>
-        <li><span class="legend-dot legend-dot-done"></span>「完成 / 結單 / 已寄出」：此商品已處理完畢</li>
+        <li><span class="legend-dot legend-dot-pending"></span>「未處理 / 待確認」：尚未處理或等待中</li>
+        <li><span class="legend-dot legend-dot-processing"></span>「處理中 / 準備中 / 已下單」：訂單已在處理流程中</li>
+        <li><span class="legend-dot legend-dot-arrived"></span>「已到貨 / 抵台」：商品已抵達日本或台灣，準備後續出貨</li>
+        <li><span class="legend-dot legend-dot-done"></span>「已出貨 / 已完成 / 結單」：此商品已處理完畢，會出現在歷史訂單。</li>
       </ul>
     </div>
   `;
@@ -890,7 +961,6 @@ function buildHistoryByDateSection(doneRows, hasItem, hasSpec, hasQty, hasPrice,
     `;
   }
 
-  // 依日期分組：優先使用出貨日期，其次更新日期
   const dateGroup = {};
   doneRows.forEach(r => {
     let d = "未填日期";
@@ -903,7 +973,6 @@ function buildHistoryByDateSection(doneRows, hasItem, hasSpec, hasQty, hasPrice,
     dateGroup[d].push(r);
   });
 
-  // 日期排序（字串排序，通常 YYYY/MM/DD 或 YYYY-MM-DD 會正常）
   const dateKeys = Object.keys(dateGroup).sort();
 
   let totalDoneQty = 0;
@@ -913,7 +982,6 @@ function buildHistoryByDateSection(doneRows, hasItem, hasSpec, hasQty, hasPrice,
   dateKeys.forEach(dateStr => {
     const list = dateGroup[dateStr];
 
-    // 同一日期內，再依商品＋款式統整數量與金額
     const itemGroup = {};
     list.forEach(r => {
       const itemVal = hasItem ? (r[COL_ITEM] || "") : "";
@@ -933,12 +1001,11 @@ function buildHistoryByDateSection(doneRows, hasItem, hasSpec, hasQty, hasPrice,
       if (hasPrice) {
         const p = parsePriceNumber(r[COL_PRICE]);
         if (p !== null) {
-          itemGroup[key].price = p; // 同商品＋款式價格視為相同
+          itemGroup[key].price = p;
         }
       }
     });
 
-    // 組出商品文字 & 計算當日總金額
     let dayTotal = 0;
     const itemLines = Object.values(itemGroup).map(info => {
       const labelItem = info.item || "未填商品";
@@ -999,6 +1066,22 @@ function toggleCardBody(headerEl){
   const body = headerEl.nextElementSibling;
   if(!body) return;
   body.classList.toggle("open");
+}
+
+// 勾選「顯示已完成商品」的篩選邏輯
+function setupDoneFilter() {
+  const toggle = document.getElementById("showDoneToggle");
+  if (!toggle) return;
+  const apply = () => {
+    const showDone = toggle.checked;
+    const doneCards = document.querySelectorAll("#result .card[data-status='done']");
+    doneCards.forEach(c => {
+      c.style.display = showDone ? "" : "none";
+    });
+  };
+  toggle.addEventListener("change", apply);
+  // 預設不顯示已完成（綠色小卡）
+  apply();
 }
 </script>
 
