@@ -229,73 +229,6 @@
       background: #8CE99A;
     }
 
-    /* ====== 歷史訂單（已結單統整） ====== */
-    .history-box {
-      margin-top: 16px;
-      font-size: 13px;
-      background: #F5F0FF;
-      border-radius: 12px;
-      padding: 10px 12px;
-      border: 1px dashed #B197FC;
-      color: #4B3F72;
-    }
-
-    .history-title {
-      font-weight: 700;
-      margin-bottom: 4px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .history-summary {
-      margin-bottom: 6px;
-    }
-
-    .history-summary b {
-      font-weight: 700;
-    }
-
-    .history-empty {
-      font-size: 12px;
-      color: #777;
-    }
-
-    .history-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 4px;
-      font-size: 12px;
-    }
-
-    .history-table th,
-    .history-table td {
-      border-bottom: 1px solid #E5DBFF;
-      padding: 4px 2px;
-      text-align: left;
-      white-space: nowrap;
-    }
-
-    .history-table th:nth-child(1),
-    .history-table td:nth-child(1) {
-      width: 55%;
-    }
-
-    .history-table th:nth-child(2),
-    .history-table td:nth-child(2) {
-      width: 10%;
-    }
-
-    .history-table th:nth-child(3),
-    .history-table td:nth-child(3) {
-      width: 20%;
-    }
-
-    .history-table th:nth-child(4),
-    .history-table td:nth-child(4) {
-      width: 15%;
-    }
-
     /* ===== 卡片（商品） ===== */
     .card {
       border-radius: 14px;
@@ -845,12 +778,6 @@ function searchOrder(){
     </div>
   `;
 
-  // ======== 歷史訂單（已結單統整） ========
-  if (hasStatus && (hasItem || hasSpec)) {
-    const doneRows = matches.filter(r => getStatusStyleKey(r[COL_STATUS]) === "done");
-    html += buildHistorySection(doneRows, hasItem, hasSpec, hasQty, hasPrice, hasDate);
-  }
-
   // 狀態 legend
   html += statusLegendHtml();
 
@@ -867,101 +794,6 @@ function statusLegendHtml(){
         <li><span class="legend-dot legend-dot-arrived"></span>「到貨 / 抵台」：商品已抵達日本或台灣，準備後續出貨</li>
         <li><span class="legend-dot legend-dot-done"></span>「完成 / 結單 / 已寄出」：此商品已處理完畢</li>
       </ul>
-    </div>
-  `;
-}
-
-// 建立「歷史訂單（已結單統整）」區塊
-function buildHistorySection(doneRows, hasItem, hasSpec, hasQty, hasPrice, hasDate){
-  if (!doneRows || !doneRows.length) {
-    return `
-      <div class="history-box">
-        <div class="history-title">📘 歷史訂單（已結單）</div>
-        <div class="history-empty">目前尚無已結單的商品，完成出貨後會顯示在這裡。</div>
-      </div>
-    `;
-  }
-
-  // 依 商品名稱＋款式 分組
-  const group = {};
-  doneRows.forEach(r => {
-    const itemVal = hasItem ? (r[COL_ITEM]||"") : "";
-    const specVal = hasSpec ? (r[COL_SPEC]||"") : "";
-    const key = itemVal + "||" + specVal;
-    if (!group[key]) group[key] = [];
-    group[key].push(r);
-  });
-
-  let totalDoneQty = 0;
-  let totalDoneAmount = 0;
-  let latestDate = "";
-
-  let rowsHtml = "";
-
-  Object.keys(group).forEach(key => {
-    const list = group[key];
-    const last = list[list.length - 1];
-
-    const itemVal = hasItem ? (list[0][COL_ITEM]||"") : "";
-    const specVal = hasSpec ? (list[0][COL_SPEC]||"") : "";
-
-    const qtyTotal = list.map(r => {
-      return hasQty ? parseQuantityNumber(r[COL_QTY]) : 1;
-    }).reduce((a,b)=>a+b,0);
-
-    totalDoneQty += qtyTotal;
-
-    let amount = 0;
-    let priceBase = null;
-    if (hasPrice) {
-      priceBase = parsePriceNumber(list[0][COL_PRICE]);
-      if (priceBase !== null) {
-        amount = priceBase * qtyTotal;
-        totalDoneAmount += amount;
-      }
-    }
-
-    let rowDate = "";
-    if (hasDate) {
-      rowDate = last[COL_DATE] || "";
-      if (rowDate) {
-        latestDate = rowDate; // 簡單地以最後一筆的日期當「最近更新」
-      }
-    }
-
-    rowsHtml += `
-      <tr>
-        <td>${itemVal || "未填商品"}${specVal ? `（${specVal}）` : ""}</td>
-        <td>${qtyTotal}</td>
-        <td>${(hasPrice && amount) ? `¥ ${amount.toLocaleString("ja-JP")}` : ""}</td>
-        <td>${rowDate}</td>
-      </tr>
-    `;
-  });
-
-  return `
-    <div class="history-box">
-      <div class="history-title">📘 歷史訂單（已結單統整）</div>
-      <div class="history-summary">
-        已結單商品共 <b>${totalDoneQty}</b> 件${
-          (totalDoneAmount && !isNaN(totalDoneAmount))
-            ? `，累計金額約 <b>¥ ${totalDoneAmount.toLocaleString("ja-JP")}</b>`
-            : ""
-        }${latestDate ? `（最近結單更新：${latestDate}）` : ""}
-      </div>
-      <table class="history-table">
-        <thead>
-          <tr>
-            <th>商品 / 款式</th>
-            <th>件數</th>
-            <th>小計</th>
-            <th>更新日期</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rowsHtml}
-        </tbody>
-      </table>
     </div>
   `;
 }
