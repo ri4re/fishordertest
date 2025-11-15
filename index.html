@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>訂單查詢 - 香魚會員專用</title>
+  <style>
+    body {
+      font-family: "Zen Maru Gothic", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #FFF9E5;
+      padding: 20px;
+    }
+    .wrap {
+      max-width: 700px;
+      margin: 0 auto;
+      background: #FFFFFF;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    h1 {
+      font-size: 20px;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    h1 span {
+      font-size: 24px;
+    }
+    .subtitle {
+      font-size: 12px;
+      text-align: center;
+      color: #777;
+      margin-bottom: 10px;
+    }
+    .status-text {
+      font-size: 12px;
+      color: #555;
+      margin-top: 4px;
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+    label {
+      font-size: 14px;
+      display: block;
+      margin: 8px 0 4px;
+    }
+    input[type="text"],
+    select {
+      border-radius: 10px;
+      border: 1px solid #FFD8A8;
+      padding: 8px;
+      box-sizing: border-box;
+      font-size: 14px;
+      background: #FFFDF8;
+    }
+    button {
+      margin-top: 8px;
+      padding: 9px 16px;
+      border-radius: 999px;
+      border: none;
+      font-size: 14px;
+      cursor: pointer;
+      background: #FFB963;
+    }
+    button:hover {
+      background: #FFA94D;
+    }
+    .tip {
+      font-size: 12px;
+      color: #777;
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+    .result {
+      margin-top: 14px;
+    }
+    .section-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin: 10px 0 6px;
+    }
+    .customer-box {
+      background: #FFF7E0;
+      border-radius: 10px;
+      padding: 8px 10px;
+      border: 1px solid #FFD8A8;
+      font-size: 13px;
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+    .card {
+      background: #FFF7E0;
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+      border: 1px solid #FFD8A8;
+    }
+    .card-title {
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .empty {
+      font-size: 14px;
+      color: #999;
+      text-align: center;
+      margin-top: 12px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 1px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      margin-left: 4px;
+    }
+    .badge-gray {
+      background: #E9ECEF;
+      color: #495057;
+    }
+    .badge-orange {
+      background: #FFE8CC;
+      color: #D9480F;
+    }
+    .badge-blue {
+      background: #E7F5FF;
+      color: #1864AB;
+    }
+    .badge-green {
+      background: #D3F9D8;
+      color: #2B8A3E;
+    }
+    .badge-default {
+      background: #FFE8C7;
+      color: #8D5B20;
+    }
+    .info-box {
+      margin-top: 12px;
+      font-size: 12px;
+      background: #FFF0E6;
+      border-radius: 10px;
+      padding: 8px 10px;
+      border: 1px dashed #FFB963;
+      color: #555;
+      line-height: 1.5;
+    }
+    .search-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+    .search-row select {
+      flex: 0 0 140px;
+    }
+    .search-row input {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    .link-btn {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      text-decoration: none;
+      border: 1px solid #FFB963;
+      background: #FFF;
+      margin-top: 2px;
+    }
+    .link-btn:hover {
+      background: #FFF3E0;
+    }
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+  <h1>🧺 訂單查詢 <span>香魚會員</span></h1>
+  <div class="subtitle">請輸入您的會員編號、信箱或 LINE 名稱查詢訂單</div>
+  <div class="status-text" id="loadStatus">資料載入中…</div>
+
+  <label>① 選擇查詢方式，輸入資料</label>
+  <div class="search-row">
+    <select id="searchType">
+      <option value="member">會員編號</option>
+      <option value="email">信箱</option>
+      <option value="line">LINE 名稱</option>
+    </select>
+    <input id="searchValue" type="text" placeholder="請輸入會員編號 / 信箱 / LINE 名稱">
+  </div>
+
+  <button onclick="searchOrder()">查詢我的訂單</button>
+
+  <div class="tip">
+    ✳ 會員編號、信箱會以「完全相同」比對。<br>
+    ✳ LINE 名稱會以「包含關鍵字」比對（例：輸入「魚魚」會找到「香魚大阪代購🐟」）。<br>
+  </div>
+
+  <div class="result" id="result"></div>
+</div>
+
+<script>
+let rows = [];
+let headerKeys = [];
+
+// 讀取同資料夾裡的 fishorder.csv
+window.addEventListener("DOMContentLoaded", () => {
+  const statusEl = document.getElementById("loadStatus");
+
+  fetch("fishorder.csv")
+    .then(resp => {
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      return resp.text();
+    })
+    .then(text => {
+      parseRawData(text);
+      statusEl.textContent = `已載入訂單資料，共 ${rows.length} 筆。`;
+    })
+    .catch(err => {
+      console.error(err);
+      statusEl.textContent = "⚠ 無法讀取訂單資料";
+    });
+});
+
+function parseRawData(raw) {
+  const cleaned = raw.trim();
+  const lines = cleaned.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) return;
+
+  const first = lines[0];
+  const sep = first.includes("\t") ? "\t" : ",";
+  headerKeys = first.split(sep).map(h => h.trim());
+
+  rows = lines.slice(1).map(line => {
+    const cols = line.split(sep);
+    const o = {};
+    headerKeys.forEach((h, i) => o[h] = (cols[i] || "").trim());
+    return o;
+  });
+}
+
+function parsePriceNumber(t){
+  const n = parseFloat((t||"").replace(/[^\d.]/g,""));
+  return isNaN(n)?null:n;
+}
+function parseQuantityNumber(t){
+  const n = parseFloat((t||"1").replace(/[^\d.]/g,""));
+  return isNaN(n)?1:n;
+}
+
+function getStatusBadgeClass(t){
+  const s=(t||"").toLowerCase();
+  if(s.includes("未")) return "badge-gray";
+  if(s.includes("進")||s.includes("處理")) return "badge-orange";
+  if(s.includes("到")||s.includes("貨")) return "badge-blue";
+  if(s.includes("完成")||s.includes("寄出")) return "badge-green";
+  return "badge-default";
+}
+
+function searchOrder(){
+  const type=document.getElementById("searchType").value;
+  const val=document.getElementById("searchValue").value.trim().toLowerCase();
+  const out=document.getElementById("result");
+  out.innerHTML="";
+
+  if(!val){alert("請輸入查詢內容");return;}
+  if(!rows.length){out.innerHTML="尚未載入資料";return;}
+
+  const emailKey  = headerKeys.find(k=>/信箱|mail/i.test(k));
+  const memberKey = headerKeys.find(k=>/會員|member/i.test(k));
+  const lineKey   = headerKeys.find(k=>/line/i.test(k));
+
+  let targetKey = type==="email"
+      ? emailKey
+      : type==="member"
+      ? memberKey
+      : lineKey;
+
+  const matches = rows.filter(r=>{
+    const v=(r[targetKey]||"").toLowerCase();
+    return type==="line" ? v.includes(val) : v===val;
+  });
+
+  if(!matches.length){out.innerHTML="查無資料";return;}
+
+  const nameKey   = headerKeys.find(k=>/客人名稱|姓名|名字|顯示名稱|客|名/i.test(k));
+  const itemKey   = headerKeys.find(k=>/商品名稱|商品|品項/i.test(k));
+  const specKey   = headerKeys.find(k=>/規格|款式|版本|ver/i.test(k));
+  const statusKey = headerKeys.find(k=>/狀態|進度/i.test(k));
+  const priceKey  = headerKeys.find(k=>/金額|價格|價/i.test(k));
+  const qtyKey    = headerKeys.find(k=>/數量|qty|件數|個數|數目/i.test(k));
+  const noteKey   = headerKeys.find(k=>/備註|備考|コメント/i.test(k));
+  const urlKey    = headerKeys.find(k=>/商品網址|商品URL|商品連結|連結|link|product ?url|url/i.test(k));
+  const dateKey   = headerKeys.find(k=>/更新日期|更新時間|最後更新|update|date/i.test(k));
+
+  let html = "";
+  const f = matches[0];
+
+  html += `<div class="section-title">👤 客人資訊</div>`;
+  html += `<div class="customer-box"><ul>`;
+  if(nameKey)   html+=`<li>名稱：${f[nameKey]||""}</li>`;
+  if(memberKey) html+=`<li>會員ID：${f[memberKey]||""}</li>`;
+  if(lineKey)   html+=`<li>LINE：${f[lineKey]||""}</li>`;
+  if(emailKey)  html+=`<li>信箱：${f[emailKey]||""}</li>`;
+  html += `</ul></div>`;
+
+  const group={};
+  matches.forEach(r=>{
+    const k=(r[itemKey]||"")+"||"+(r[specKey]||"");
+    if(!group[k]) group[k]=[];
+    group[k].push(r);
+  });
+
+  html += `<div class="section-title">📦 商品列表</div>`;
+
+  Object.keys(group).forEach(k=>{
+    const list=group[k];
+    const last=list[list.length-1];
+
+    const itemVal=list[0][itemKey]||"";
+    const specVal=list[0][specKey]||"";
+
+    const qtyTotal=list.map(r=>parseQuantityNumber(r[qtyKey])).reduce((a,b)=>a+b,0);
+    const priceBase=parsePriceNumber(list[0][priceKey]);
+    const total=priceBase?priceBase*qtyTotal:"";
+
+    const noteCombined=[...new Set(list.map(r=>r[noteKey]).filter(Boolean))].join(" / ");
+
+    html += `<div class="card">`;
+    html += `<div class="card-title">📦 ${itemVal}${specVal?`（${specVal}）`:""} <span class="badge ${getStatusBadgeClass(last[statusKey])}">${last[statusKey]||""}</span></div>`;
+    html += `<div>🔢 數量：${qtyTotal}</div>`;
+    if(priceKey) html += `<div>💰 金額：${list[0][priceKey]}${total?`（合計：${total}）`:""}</div>`;
+    if(urlKey && last[urlKey]) html += `<div>🔗 商品連結：<a class="link-btn" href="${last[urlKey]}" target="_blank" rel="noopener noreferrer">查看商品頁</a></div>`;
+    if(noteCombined) html += `<div>📝 備註：${noteCombined}</div>`;
+    if(dateKey && last[dateKey]) html += `<div>📅 更新日期：${last[dateKey]}</div>`;
+    html += `</div>`;
+  });
+
+  html += `
+    <div class="info-box">
+      🔔 如對訂單進度有任何疑問，請將此畫面截圖，並透過 LINE 官方帳號與我們聯繫。<br>
+      我們會依照畫面中的「訂單狀態」與「更新日期」為您確認最新情況。🙏
+    </div>
+  `;
+
+  out.innerHTML=html;
+}
+</script>
+
+</body>
+</html>
