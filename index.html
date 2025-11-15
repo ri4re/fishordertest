@@ -229,6 +229,71 @@
       background: #8CE99A;
     }
 
+    /* ====== 歷史訂單（依出貨日期統整） ====== */
+    .history-box {
+      margin-top: 16px;
+      font-size: 13px;
+      background: #F5F0FF;
+      border-radius: 12px;
+      padding: 10px 12px;
+      border: 1px dashed #B197FC;
+      color: #4B3F72;
+    }
+
+    .history-title {
+      font-weight: 700;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .history-summary {
+      margin-bottom: 6px;
+    }
+
+    .history-summary b {
+      font-weight: 700;
+    }
+
+    .history-empty {
+      font-size: 12px;
+      color: #777;
+    }
+
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 4px;
+      font-size: 12px;
+    }
+
+    .history-table th,
+    .history-table td {
+      border-bottom: 1px solid #E5DBFF;
+      padding: 4px 2px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .history-table th:nth-child(1),
+    .history-table td:nth-child(1) {
+      width: 18%;
+      white-space: nowrap;
+    }
+
+    .history-table th:nth-child(2),
+    .history-table td:nth-child(2) {
+      width: 62%;
+    }
+
+    .history-table th:nth-child(3),
+    .history-table td:nth-child(3) {
+      width: 20%;
+      white-space: nowrap;
+      text-align: right;
+    }
+
     /* ===== 卡片（商品） ===== */
     .card {
       border-radius: 14px;
@@ -778,6 +843,12 @@ function searchOrder(){
     </div>
   `;
 
+  // ======== 歷史訂單（依出貨日期統整） ========
+  if (hasStatus && hasDate) {
+    const doneRows = matches.filter(r => getStatusStyleKey(r[COL_STATUS]) === "done");
+    html += buildHistoryByDateSection(doneRows, hasItem, hasSpec, hasQty, hasPrice, hasDate);
+  }
+
   // 狀態 legend
   html += statusLegendHtml();
 
@@ -794,6 +865,120 @@ function statusLegendHtml(){
         <li><span class="legend-dot legend-dot-arrived"></span>「到貨 / 抵台」：商品已抵達日本或台灣，準備後續出貨</li>
         <li><span class="legend-dot legend-dot-done"></span>「完成 / 結單 / 已寄出」：此商品已處理完畢</li>
       </ul>
+    </div>
+  `;
+}
+
+/**
+ * 依「出貨日期（更新日期）」統整已結單紀錄
+ * 每個日期一行，顯示：日期 / 商品＋數量 / 當日小計
+ */
+function buildHistoryByDateSection(doneRows, hasItem, hasSpec, hasQty, hasPrice, hasDate) {
+  if (!doneRows || !doneRows.length) {
+    return `
+      <div class="history-box">
+        <div class="history-title">📘 歷史訂單（已結單）</div>
+        <div class="history-empty">目前尚無已結單的商品，完成出貨後會顯示在這裡。</div>
+      </div>
+    `;
+  }
+
+  // 依日期分組（用更新日期當作出貨日）
+  const dateGroup = {};
+  doneRows.forEach(r => {
+    const d = hasDate ? (r[COL_DATE] || "未填日期") : "未填日期";
+    if (!dateGroup[d]) dateGroup[d] = [];
+    dateGroup[d].push(r);
+  });
+
+  // 日期排序（字串排序，通常 YYYY/MM/DD 或 YYYY-MM-DD 會正常）
+  const dateKeys = Object.keys(dateGroup).sort();
+
+  let totalDoneQty = 0;
+  let totalDoneAmount = 0;
+  let rowsHtml = "";
+
+  dateKeys.forEach(dateStr => {
+    const list = dateGroup[dateStr];
+
+    // 同一日期內，再依商品＋款式統整數量與金額
+    const itemGroup = {};
+    list.forEach(r => {
+      const itemVal = hasItem ? (r[COL_ITEM] || "") : "";
+      const specVal = hasSpec ? (r[COL_SPEC] || "") : "";
+      const key = itemVal + "||" + specVal;
+      if (!itemGroup[key]) {
+        itemGroup[key] = {
+          item: itemVal,
+          spec: specVal,
+          qty: 0,
+          price: null
+        };
+      }
+      const q = hasQty ? parseQuantityNumber(r[COL_QTY]) : 1;
+      itemGroup[key].qty += q;
+
+      if (hasPrice) {
+        const p = parsePriceNumber(r[COL_PRICE]);
+        if (p !== null) {
+          // 預設同一商品＋款式價格相同，只記一個
+          itemGroup[key].price = p;
+        }
+      }
+    });
+
+    // 組出商品文字 & 計算當日總金額
+    let dayTotal = 0;
+    const itemLines = Object.values(itemGroup).map(info => {
+      const labelItem = info.item || "未填商品";
+      const labelSpec = info.spec ? `（${info.spec}）` : "";
+      const label = `${labelItem}${labelSpec} x${info.qty}`;
+      totalDoneQty += info.qty;
+
+      if (hasPrice && info.price !== null) {
+        const sub = info.price * info.qty;
+        dayTotal += sub;
+        return `${label}（小計 ¥${sub.toLocaleString("ja-JP")}）`;
+      } else {
+        return label;
+      }
+    });
+
+    if (hasPrice) {
+      totalDoneAmount += dayTotal;
+    }
+
+    rowsHtml += `
+      <tr>
+        <td>${dateStr}</td>
+        <td>${itemLines.join(" / ")}</td>
+        <td>${hasPrice && dayTotal ? `¥ ${dayTotal.toLocaleString("ja-JP")}` : ""}</td>
+      </tr>
+    `;
+  });
+
+  return `
+    <div class="history-box">
+      <div class="history-title">📘 歷史訂單（依出貨日期統整）</div>
+      <div class="history-summary">
+        已結單商品共 <b>${totalDoneQty}</b> 件${
+          (totalDoneAmount && !isNaN(totalDoneAmount))
+            ? `，累計金額約 <b>¥ ${totalDoneAmount.toLocaleString("ja-JP")}</b>`
+            : ""
+        }
+      </div>
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>出貨日期</th>
+            <th>出貨商品</th>
+            <th>當日小計</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
     </div>
   `;
 }
