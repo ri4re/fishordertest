@@ -3,283 +3,356 @@
 <head>
   <meta charset="UTF-8">
   <title>訂單查詢 - 香魚會員專用</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">  <!-- 手機版必須 -->
+  <!-- 手機版必要：讓寬度跟裝置一樣 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <style>
+    /* ========= 共用樣式 ========= */
     body {
       font-family: "Zen Maru Gothic", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #FFF9E5;
-      padding: 20px;
+      background: #FFF6E7;
+      padding: 24px;
+      margin: 0;
+      color: #333;
     }
+
     .wrap {
-      max-width: 700px;
+      max-width: 720px;
       margin: 0 auto;
-      background: #FFFFFF;
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      background: #FFFDF7;
+      border-radius: 18px;
+      padding: 20px 20px 24px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+      box-sizing: border-box;
     }
+
     h1 {
-      font-size: 20px;
+      font-size: 24px;              /* 標題字放大一點 */
       text-align: center;
-      margin-bottom: 6px;
+      margin: 0 0 8px;
+      letter-spacing: 1px;
     }
     h1 span {
-      font-size: 24px;
+      font-size: 26px;
     }
+
     .subtitle {
       font-size: 12px;
       text-align: center;
-      color: #777;
-      margin-bottom: 10px;
+      color: #87613B;
+      margin-bottom: 14px;
     }
+
     .status-text {
       font-size: 12px;
       color: #555;
-      margin-top: 4px;
-      margin-bottom: 10px;
+      margin: 2px 0 10px;
       line-height: 1.5;
     }
+
     label {
       font-size: 14px;
       display: block;
       margin: 8px 0 4px;
     }
-    input[type="text"],
-    select {
-      border-radius: 10px;
-      border: 1px solid #FFD8A8;
-      padding: 8px;
+
+    /* 搜尋區塊：select + 搜尋框 + 按鈕黏在一起 */
+    .search-block {
+      margin-bottom: 6px;
+    }
+
+    .search-row-select {
+      margin-bottom: 6px;
+    }
+
+    .search-row-select select {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid #FFD6A0;
+      padding: 10px 12px;
+      background: #FFFDF8;
+      font-size: 14px;
       box-sizing: border-box;
+    }
+
+    .search-inline {
+      display: flex;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .search-inline input[type="text"] {
+      flex: 1 1 auto;
+      border-radius: 999px 0 0 999px;
+      border: 1px solid #FFB96A;
+      border-right: none;
+      padding: 10px 12px;
       font-size: 14px;
       background: #FFFDF8;
+      box-sizing: border-box;
     }
-    button {
-      margin-top: 8px;
-      padding: 9px 16px;
-      border-radius: 999px;
-      border: none;
+
+    .search-inline button {
+      flex: 0 0 auto;
+      border-radius: 0 999px 999px 0;
+      border: 1px solid #FFB96A;
+      background: #FFB763;
+      padding: 10px 16px;
       font-size: 14px;
       cursor: pointer;
-      background: #FFB963;
+      font-weight: 600;
+      box-shadow: 0 3px 0 #E39A3C;
+      margin: 0;
     }
-    button:hover {
-      background: #FFA94D;
+
+    .search-inline button:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 #E39A3C;
     }
+
     .tip {
       font-size: 12px;
       color: #777;
-      margin-top: 4px;
+      margin-top: 6px;
       line-height: 1.4;
     }
+
     .result {
-      margin-top: 14px;
+      margin-top: 16px;
     }
+
     .section-title {
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 700;
-      margin: 10px 0 6px;
+      margin: 16px 0 8px;
+      color: #8B5E2C;
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
+
+    .section-title-icon {
+      font-size: 14px;  /* ICON 稍微壓小一點 */
+    }
+
     .customer-box {
-      background: #FFF7E0;
-      border-radius: 10px;
-      padding: 8px 10px;
-      border: 1px solid #FFD8A8;
-      font-size: 13px;
-      line-height: 1.6;
-      margin-bottom: 10px;
-    }
-    .card {
-      background: #FFF7E0;
+      background: #FFF4DA;
       border-radius: 12px;
       padding: 10px 12px;
-      margin-bottom: 10px;
       border: 1px solid #FFD8A8;
-    }
-    .card-title {
-      font-weight: 700;
+      font-size: 14px;
+      line-height: 1.7;
       margin-bottom: 4px;
+      list-style: none;
     }
+
+    .customer-box ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .info-box {
+      margin-top: 12px;
+      font-size: 13px;
+      background: #FFF0D8;
+      border-radius: 12px;
+      padding: 10px 12px;
+      border: 1px dashed #FFBC75;
+      color: #555;
+      line-height: 1.5;
+    }
+
     .empty {
       font-size: 14px;
       color: #999;
       text-align: center;
       margin-top: 12px;
     }
+
+    /* ===== 卡片（商品） ===== */
+
+    .card {
+      border-radius: 14px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+      border: 1px solid #FFD7B0;
+      background: #FFF7E6;
+      font-size: 14px;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    /* 狀態配色：依狀態自動變卡片顏色 */
+    .card--pending {
+      background: #FFF7E6;
+      border-color: #FFD8A8;
+    }
+    .card--processing {
+      background: #FFF3D9;
+      border-color: #FFC078;
+    }
+    .card--arrived {
+      background: #E8F4FF;
+      border-color: #74C0FC;
+    }
+    .card--done {
+      background: #E7FBEF;
+      border-color: #69DB7C;
+    }
+    .card--default {
+      background: #F8F9FA;
+      border-color: #CED4DA;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      gap: 8px;
+    }
+
+    .card-main {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .card-title {
+      font-weight: 700;
+      margin-bottom: 2px;
+      color: #7A4D1A;
+      font-size: 15px;
+    }
+
+    .card-subline {
+      font-size: 13px;
+      color: #555;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .card-subline span {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .card-toggle-icon {
+      font-size: 16px;
+      flex: 0 0 auto;
+      color: #996633;
+      transform: translateY(1px);
+    }
+
     .badge {
       display: inline-block;
       padding: 1px 8px;
       border-radius: 999px;
       font-size: 11px;
       margin-left: 4px;
+      white-space: nowrap;
     }
-    .badge-gray {
-      background: #E9ECEF;
-      color: #495057;
-    }
-    .badge-orange {
+
+    .badge--pending {
       background: #FFE8CC;
       color: #D9480F;
     }
-    .badge-blue {
-      background: #E7F5FF;
-      color: #1864AB;
+    .badge--processing {
+      background: #FFE3E3;
+      color: #C92A2A;
     }
-    .badge-green {
+    .badge--arrived {
+      background: #DCEFFF;
+      color: #1C7ED6;
+    }
+    .badge--done {
       background: #D3F9D8;
       color: #2B8A3E;
     }
-    .badge-default {
-      background: #FFE8C7;
-      color: #8D5B20;
+    .badge--default {
+      background: #E9ECEF;
+      color: #495057;
     }
-    .info-box {
-      margin-top: 12px;
-      font-size: 12px;
-      background: #FFF0E6;
-      border-radius: 10px;
-      padding: 8px 10px;
-      border: 1px dashed #FFB963;
-      color: #555;
-      line-height: 1.5;
+
+    .card-body {
+      margin-top: 8px;
+      font-size: 13px;
+      line-height: 1.6;
+      display: none;             /* 預設收合 */
     }
-    .search-row {
-      display: flex;
-      gap: 8px;
-      margin-top: 4px;
-      flex-wrap: wrap;
+
+    .card-body.open {
+      display: block;           /* 展開 */
     }
-    .search-row select {
-      flex: 0 0 140px;
+
+    .card-body-row {
+      margin-bottom: 3px;
     }
-    .search-row input {
-      flex: 1 1 auto;
-      min-width: 0;
-    }
+
     .link-btn {
       display: inline-block;
-      padding: 4px 10px;
-      border-radius: 999px;
+      padding: 4px 9px;
+      border-radius: 10px;
       font-size: 12px;
       text-decoration: none;
       border: 1px solid #FFB963;
       background: #FFF;
-      margin-top: 2px;
+      margin-top: 3px;
     }
     .link-btn:hover {
       background: #FFF3E0;
     }
 
-    /* ──────────────── */
-    /* 超 APP 版（手機專用） */
-    /* ──────────────── */
+    /* ========= 手機 RWD：更像 App ========= */
     @media (max-width: 768px) {
-
       body {
-        margin: 0;
         padding: 0;
         background: #FFF6E7;
       }
 
       .wrap {
-        width: 100%;
         max-width: 100%;
         margin: 0;
-        padding: 20px 16px 24px;
         border-radius: 0;
-        background: #FFFDF7;
-        min-height: 100vh;
         box-shadow: none;
+        padding: 20px 14px 24px;
+        min-height: 100vh;
       }
 
       h1 {
-        font-size: 20px;
-        margin-top: 0;
-        padding-top: 4px;
-        padding-bottom: 6px;
+        font-size: 22px;
+        padding-bottom: 4px;
         border-bottom: 1px solid #FFE1B7;
       }
 
       .subtitle {
-        font-size: 12px;
+        margin-top: 4px;
         margin-bottom: 14px;
-        color: #8A6E4A;
       }
 
-      .search-row {
-        flex-direction: column;
-        gap: 10px;
-        margin-bottom: 10px;
-      }
-
-      input[type="text"],
-      select {
-        width: 100%;
-        font-size: 16px;
-        padding: 14px 12px;
-        border-radius: 12px;
-        border: 1.6px solid #FFA94D;
-        background: #FFFDF8;
-      }
-
-      button {
-        width: 100%;
-        font-size: 17px;
-        padding: 14px;
-        border-radius: 14px;
-        background: #FFB763;
-        font-weight: 600;
-        box-shadow: 0 3px 0 #E39A3C;
-      }
-      button:active {
-        transform: translateY(2px);
-        box-shadow: 0 1px 0 #E39A3C;
-      }
-
-      .customer-box {
-        background: #FFF4DA;
-        border-radius: 12px;
-        padding: 12px;
-        border: 1px solid #FFD8A8;
+      .search-row-select select {
         font-size: 15px;
-        line-height: 1.7;
+        padding: 11px 12px;
       }
 
-      .section-title {
+      .search-inline input[type="text"] {
         font-size: 16px;
-        font-weight: 700;
-        margin-top: 20px;
-        margin-bottom: 8px;
-        color: #8B5E2C;
+        padding: 12px 12px;
+      }
+      .search-inline button {
+        font-size: 16px;
+        padding: 12px 16px;
       }
 
       .card {
-        border-radius: 12px;
-        background: #FFF4E6;
-        padding: 14px 14px;
-        margin-bottom: 14px;
-        border: 1px solid #FFD7B0;
+        font-size: 14px;
+      }
+      .card-title {
         font-size: 15px;
       }
-
-      .card-title {
-        font-size: 16px;
-        margin-bottom: 6px;
-        font-weight: 700;
-        color: #7A4D1A;
-      }
-
-      .link-btn {
-        font-size: 14px;
-        padding: 6px 10px;
-        border-radius: 10px;
-      }
-
       .info-box {
-        background: #FFF0D8;
-        padding: 12px;
-        border-radius: 12px;
-        font-size: 14px;
-        border: 1px dashed #FFBC75;
+        font-size: 13px;
       }
     }
   </style>
@@ -291,21 +364,26 @@
   <div class="subtitle">請輸入您的會員編號、信箱或 LINE 名稱查詢訂單</div>
   <div class="status-text" id="loadStatus">資料載入中…</div>
 
-  <label>① 選擇查詢方式，輸入資料</label>
-  <div class="search-row">
-    <select id="searchType">
-      <option value="member">會員編號</option>
-      <option value="email">信箱</option>
-      <option value="line">LINE 名稱</option>
-    </select>
-    <input id="searchValue" type="text" placeholder="請輸入會員編號 / 信箱 / LINE 名稱">
-  </div>
+  <div class="search-block">
+    <label>① 選擇查詢方式，輸入資料</label>
 
-  <button onclick="searchOrder()">查詢我的訂單</button>
+    <div class="search-row-select">
+      <select id="searchType">
+        <option value="member">會員編號</option>
+        <option value="email">信箱</option>
+        <option value="line">LINE 名稱</option>
+      </select>
+    </div>
 
-  <div class="tip">
-    ✳ 會員編號、信箱會以「完全相同」比對。<br>
-    ✳ LINE 名稱會以「包含關鍵字」比對（例：輸入「魚魚」會找到「香魚大阪代購🐟」）。<br>
+    <div class="search-inline">
+      <input id="searchValue" type="text" placeholder="請輸入會員編號 / 信箱 / LINE 名稱">
+      <button onclick="searchOrder()">搜尋</button>
+    </div>
+
+    <div class="tip">
+      ✳ 會員編號、信箱會以「完全相同」比對。<br>
+      ✳ LINE 名稱會以「包含關鍵字」比對（例：輸入「魚魚」會找到「香魚大阪代購🐟」）。<br>
+    </div>
   </div>
 
   <div class="result" id="result"></div>
@@ -330,10 +408,11 @@ window.addEventListener("DOMContentLoaded", () => {
     })
     .catch(err => {
       console.error(err);
-      statusEl.textContent = "⚠ 無法讀取訂單資料";
+      statusEl.textContent = "⚠ 無法讀取訂單資料`;
     });
 });
 
+// 解析 CSV
 function parseRawData(raw) {
   const cleaned = raw.trim();
   const lines = cleaned.split(/\r?\n/).filter(l => l.trim());
@@ -360,13 +439,14 @@ function parseQuantityNumber(t){
   return isNaN(n)?1:n;
 }
 
-function getStatusBadgeClass(t){
+// 狀態→樣式 key
+function getStatusStyleKey(t){
   const s=(t||"").toLowerCase();
-  if(s.includes("未")) return "badge-gray";
-  if(s.includes("進")||s.includes("處理")) return "badge-orange";
-  if(s.includes("到")||s.includes("貨")) return "badge-blue";
-  if(s.includes("完成")||s.includes("寄出")) return "badge-green";
-  return "badge-default";
+  if(s.includes("未")) return "pending";
+  if(s.includes("處理")||s.includes("進行")||s.includes("下單")) return "processing";
+  if(s.includes("到")||s.includes("貨")||s.includes("抵台")) return "arrived";
+  if(s.includes("完成")||s.includes("寄出")||s.includes("結單")) return "done";
+  return "default";
 }
 
 function searchOrder(){
@@ -408,7 +488,8 @@ function searchOrder(){
   let html = "";
   const f = matches[0];
 
-  html += `<div class="section-title">👤 客人資訊</div>`;
+  // 客人資訊
+  html += `<div class="section-title"><span class="section-title-icon">👤</span> 客人資訊</div>`;
   html += `<div class="customer-box"><ul>`;
   if(nameKey)   html+=`<li>名稱：${f[nameKey]||""}</li>`;
   if(memberKey) html+=`<li>會員ID：${f[memberKey]||""}</li>`;
@@ -416,6 +497,7 @@ function searchOrder(){
   if(emailKey)  html+=`<li>信箱：${f[emailKey]||""}</li>`;
   html += `</ul></div>`;
 
+  // 依「商品 + 規格」分組
   const group={};
   matches.forEach(r=>{
     const k=(r[itemKey]||"")+"||"+(r[specKey]||"");
@@ -423,9 +505,9 @@ function searchOrder(){
     group[k].push(r);
   });
 
-  html += `<div class="section-title">📦 商品列表</div>`;
+  html += `<div class="section-title"><span class="section-title-icon">📦</span> 商品列表</div>`;
 
-  Object.keys(group).forEach(k=>{
+  Object.keys(group).forEach((k, idx)=>{
     const list=group[k];
     const last=list[list.length-1];
 
@@ -438,14 +520,42 @@ function searchOrder(){
 
     const noteCombined=[...new Set(list.map(r=>r[noteKey]).filter(Boolean))].join(" / ");
 
-    html += `<div class="card">`;
-    html += `<div class="card-title">📦 ${itemVal}${specVal?`（${specVal}）`:""} <span class="badge ${getStatusBadgeClass(last[statusKey])}">${last[statusKey]||""}</span></div>`;
-    html += `<div>🔢 數量：${qtyTotal}</div>`;
-    if(priceKey) html += `<div>💰 金額：${list[0][priceKey]}${total?`（合計：${total}）`:""}</div>`;
-    if(urlKey && last[urlKey]) html += `<div>🔗 商品連結：<a class="link-btn" href="${last[urlKey]}" target="_blank" rel="noopener noreferrer">查看商品頁</a></div>`;
-    if(noteCombined) html += `<div>📝 備註：${noteCombined}</div>`;
-    if(dateKey && last[dateKey]) html += `<div>📅 更新日期：${last[dateKey]}</div>`;
-    html += `</div>`;
+    const statusText = last[statusKey] || "";
+    const statusKeyStyle = getStatusStyleKey(statusText);
+
+    html += `<div class="card card--${statusKeyStyle}">`;
+
+    // header（點擊展開/收合）
+    html += `
+      <div class="card-header" onclick="toggleCardBody(this)">
+        <div class="card-main">
+          <div class="card-title">
+            ${itemVal}${specVal?`（${specVal}）`:""}
+            <span class="badge badge--${statusKeyStyle}">${statusText}</span>
+          </div>
+          <div class="card-subline">
+            <span>數量：${qtyTotal}</span>
+            ${priceKey ? `<span>金額：${list[0][priceKey]}${total?`（合計：${total}）`:""}</span>` : ""}
+          </div>
+        </div>
+        <div class="card-toggle-icon">⌄</div>
+      </div>
+    `;
+
+    // body（詳細資訊，可收合）
+    html += `<div class="card-body${idx===0?" open":""}">`;
+    if(urlKey && last[urlKey]) {
+      html += `<div class="card-body-row">🔗 商品連結：<a class="link-btn" href="${last[urlKey]}" target="_blank" rel="noopener noreferrer">查看商品頁</a></div>`;
+    }
+    if(noteCombined) {
+      html += `<div class="card-body-row">📝 備註：${noteCombined}</div>`;
+    }
+    if(dateKey && last[dateKey]) {
+      html += `<div class="card-body-row">📅 更新日期：${last[dateKey]}</div>`;
+    }
+    html += `</div>`; // end body
+
+    html += `</div>`; // end card
   });
 
   html += `
@@ -456,6 +566,13 @@ function searchOrder(){
   `;
 
   out.innerHTML=html;
+}
+
+// 點 header 展開/收合
+function toggleCardBody(headerEl){
+  const body = headerEl.nextElementSibling;
+  if(!body) return;
+  body.classList.toggle("open");
 }
 </script>
 
